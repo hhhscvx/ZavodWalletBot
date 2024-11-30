@@ -1,10 +1,9 @@
 import time
 from random import randint
-from time import sleep
 import asyncio
 import dateutil.parser
-from urllib.parse import quote, unquote
-from typing import Any, Tuple, Optional, Dict, List
+from urllib.parse import unquote
+from typing import Any
 
 import aiohttp
 from aiohttp_proxy import ProxyConnector
@@ -15,8 +14,8 @@ from pyrogram.raw.functions.messages import RequestWebView
 
 from bot.utils import logger
 from bot.exceptions import InvalidSession
-from .headers import headers
 from bot.config import settings
+from .headers import headers
 
 
 class Miner:
@@ -59,7 +58,7 @@ class Miner:
 
             auth_url = web_view.url
             query = unquote(string=auth_url.split('tgWebAppData=')[1].split('&tgWebAppVersion')[0])
-            
+
             return query
 
         except InvalidSession as error:
@@ -77,7 +76,7 @@ class Miner:
         except Exception as error:
             logger.error(f"{self.session_name} | Proxy: {proxy} | Error: {error}")
 
-    async def telegram_profile(self, http_client: aiohttp.ClientSession) -> Dict[str, Any]:
+    async def telegram_profile(self, http_client: aiohttp.ClientSession) -> dict[str, Any]:
         try:
             response = await http_client.get(url='https://telegram-api.mdaowallet.com/user/profile')
             response.raise_for_status()
@@ -90,7 +89,7 @@ class Miner:
             logger.error(f"{self.session_name} | Unknown error getting telegram profile: {error}")
             await asyncio.sleep(delay=7)
 
-    async def profile(self, http_client: aiohttp.ClientSession) -> Dict[str, Any]:
+    async def profile(self, http_client: aiohttp.ClientSession) -> dict[str, Any]:
         try:
             response = await http_client.get(
                 url='https://zavod-api.mdaowallet.com/user/profile',
@@ -105,7 +104,7 @@ class Miner:
             logger.error(f"{self.session_name} | Unknown error getting profile: {error}")
             await asyncio.sleep(delay=7)
 
-    async def farm(self, http_client: aiohttp.ClientSession) -> Dict[str, Any]:
+    async def farm(self, http_client: aiohttp.ClientSession) -> dict[str, Any]:
         try:
             response = await http_client.get(
                 url='https://zavod-api.mdaowallet.com/user/farm')
@@ -119,7 +118,7 @@ class Miner:
             logger.error(f"{self.session_name} | Unknown error while getting farm: {error}")
             await asyncio.sleep(delay=7)
 
-    async def toolkit_settings(self, http_client: aiohttp.ClientSession) -> Dict[str, Any]:
+    async def toolkit_settings(self, http_client: aiohttp.ClientSession) -> dict[str, Any]:
         try:
             response = await http_client.get(
                 url='https://zavod-api.mdaowallet.com/user/toolkitSettings')
@@ -133,7 +132,7 @@ class Miner:
             logger.error(f"{self.session_name} | Unknown error while daily getting toolkit settings: {error}")
             await asyncio.sleep(delay=7)
 
-    async def workbench_settings(self, http_client: aiohttp.ClientSession) -> Dict[str, Any]:
+    async def workbench_settings(self, http_client: aiohttp.ClientSession) -> dict[str, Any]:
         try:
             response = await http_client.get(
                 url='https://zavod-api.mdaowallet.com/user/workbenchSettings')
@@ -147,10 +146,10 @@ class Miner:
             logger.error(f"{self.session_name} | Unknown error while daily getting workbench settings: {error}")
             await asyncio.sleep(delay=7)
 
-    async def claim(self, http_client: aiohttp.ClientSession) -> Dict[str, Any]:
+    async def claim(self, http_client: aiohttp.ClientSession) -> dict[str, Any]:
         try:
-            response = await http_client.post(
-                url='https://zavod-api.mdaowallet.com/user/claim')
+            response = await http_client.post(url='https://zavod-api.mdaowallet.com/user/claim',
+                                              json={'promoStatus': False})
             response.raise_for_status()
 
             response_json = await response.json()
@@ -161,7 +160,7 @@ class Miner:
             logger.error(f"{self.session_name} | Unknown error while claiming: {error}")
             await asyncio.sleep(delay=7)
 
-    async def upgrade_speed(self, http_client: aiohttp.ClientSession) -> Dict[str, Any]:
+    async def upgrade_speed(self, http_client: aiohttp.ClientSession) -> dict[str, Any]:
         try:
             response = await http_client.post(
                 url='https://zavod-api.mdaowallet.com/user/upgradeWorkbench',
@@ -175,7 +174,7 @@ class Miner:
             logger.error(f"{self.session_name} | Unknown error upgrading speed (workbench): {error}")
             await asyncio.sleep(delay=7)
 
-    async def upgrade_storage(self, http_client: aiohttp.ClientSession) -> Dict[str, Any]:
+    async def upgrade_storage(self, http_client: aiohttp.ClientSession) -> dict[str, Any]:
         try:
             response = await http_client.post(
                 url='https://zavod-api.mdaowallet.com/user/upgradeToolkit',
@@ -189,7 +188,7 @@ class Miner:
             logger.error(f"{self.session_name} | Unknown error upgrading storage (toolkit): {error}")
             await asyncio.sleep(delay=7)
 
-    def is_claim_possible(self, farm_info: Dict[str, Any]) -> bool:
+    def is_claim_possible(self, farm_info: dict[str, Any]) -> bool:
         if not farm_info:
             return False
 
@@ -211,7 +210,7 @@ class Miner:
 
         return False
 
-    def get_sleep_time_to_claim(self, farm_info: Dict[str, Any]) -> int:
+    def get_sleep_time_to_claim(self, farm_info: dict[str, Any]) -> int:
         if not farm_info:
             return settings.DEFAULT_SLEEP
 
@@ -266,8 +265,6 @@ class Miner:
                     if time.time() - access_token_created_time >= 3600:
                         tg_web_data = await self.get_tg_web_data(proxy=proxy)
 
-                        logger.success(f"Tg Init Data: {tg_web_data}")
-
                         access_token_created_time = time.time()
 
                         http_client.headers["Telegram-Init-Data"] = tg_web_data
@@ -287,7 +284,8 @@ class Miner:
 
                         can_claim = self.is_claim_possible(farm_info=farm_info)
                         if can_claim:
-                            sleep(randint(2,7))
+                            logger.info(f"Wait 5 seconds before claim..")
+                            await asyncio.sleep(5)
                             claim_info = await self.claim(http_client=http_client)
                             balance = claim_info['tokens']
                             logger.info(f"{self.session_name} | Claimed successfully, new balance is <c>{balance: .6f}</c>")
@@ -300,50 +298,60 @@ class Miner:
                             if settings.SPEED_MAX_LEVEL >= next_level:
                                 w_price = self.get_speed_level_upgrade_price(level=next_level)
                                 if w_price == -1:
-                                    logger.error(f"{self.session_name} | Cannot upgrade speed (workbench), error in settings")
+                                    logger.error(
+                                        f"{self.session_name} | Cannot upgrade speed (workbench), error in settings")
                                 elif w_price == -2:
                                     logger.info(f"{self.session_name} | Speed (workbench) upgraded to maximum level")
                                 else:
                                     if balance >= w_price:
-                                        logger.info(f"{self.session_name} | Speed (workbench) upgrade is possible, trying to upgrade")
-                                        sleep(randint(2,7))
+                                        logger.info(
+                                            f"{self.session_name} | Speed (workbench) upgrade is possible, trying to upgrade")
+                                        await asyncio.sleep(randint(2, 7))
                                         w_upgrade_info = await self.upgrade_speed(http_client=http_client)
                                         if w_upgrade_info:
-                                            sleep(randint(1,4))
+                                            await asyncio.sleep(randint(1, 4))
                                             profile_info = await self.profile(http_client=http_client)
                                             balance = profile_info['tokens']
                                             w_level = w_upgrade_info['workbenchLevel']
-                                            logger.success(f"{self.session_name} | Speed (workbench) upgraded successfully to level <c>{w_level}</c>, new balance is <c>{balance: .6f}</c>")
+                                            logger.success(
+                                                f"{self.session_name} | Speed (workbench) upgraded successfully to level <c>{w_level}</c>, new balance is <c>{balance: .6f}</c>")
                                             sleep_time = self.get_sleep_time_to_claim(farm_info=w_upgrade_info)
                                     else:
-                                        logger.info(f"{self.session_name} | Cannot upgrade speed (workbench), not enough tokens")
+                                        logger.info(
+                                            f"{self.session_name} | Cannot upgrade speed (workbench), not enough tokens")
                             else:
-                                logger.info(f"{self.session_name} | Speed (workbench) upgraded to maximum level due settings")
+                                logger.info(
+                                    f"{self.session_name} | Speed (workbench) upgraded to maximum level due settings")
 
                         if settings.UPGRADE_STORAGE:
                             next_level = farm_info['toolkitLevel'] + 1
                             if settings.STORAGE_MAX_LEVEL >= next_level:
                                 t_price = self.get_storage_level_upgrade_price(level=next_level)
                                 if t_price == -1:
-                                    logger.error(f"{self.session_name} | Cannot upgrade storage (toolkit), error in settings")
+                                    logger.error(
+                                        f"{self.session_name} | Cannot upgrade storage (toolkit), error in settings")
                                 elif t_price == -2:
                                     logger.info(f"{self.session_name} | Storage (toolkit) upgraded to maximum level")
                                 else:
                                     if balance >= t_price:
-                                        logger.info(f"{self.session_name} | Storage (toolkit) upgrade is possible, trying to upgrade")
-                                        sleep(randint(2,7))
+                                        logger.info(
+                                            f"{self.session_name} | Storage (toolkit) upgrade is possible, trying to upgrade")
+                                        await asyncio.sleep(randint(2, 7))
                                         t_upgrade_info = await self.upgrade_storage(http_client=http_client)
                                         if t_upgrade_info:
-                                            sleep(randint(1,4))
+                                            await asyncio.sleep(randint(1, 4))
                                             profile_info = await self.profile(http_client=http_client)
                                             balance = profile_info['tokens']
                                             t_level = t_upgrade_info['toolkitLevel']
-                                            logger.success(f"{self.session_name} | Storage (toolkit) upgraded successfully to level <c>{t_level}</c>, new balance is <c>{balance: .6f}</c>")
+                                            logger.success(
+                                                f"{self.session_name} | Storage (toolkit) upgraded successfully to level <c>{t_level}</c>, new balance is <c>{balance: .6f}</c>")
                                             sleep_time = self.get_sleep_time_to_claim(farm_info=t_upgrade_info)
                                     else:
-                                        logger.info(f"{self.session_name} | Cannot upgrade storage (toolkit), not enough tokens")
+                                        logger.info(
+                                            f"{self.session_name} | Cannot upgrade storage (toolkit), not enough tokens")
                             else:
-                                logger.info(f"{self.session_name} | Storage (toolkit) upgraded to maximum level due settings")
+                                logger.info(
+                                    f"{self.session_name} | Storage (toolkit) upgraded to maximum level due settings")
 
                 except InvalidSession as error:
                     raise error
@@ -362,3 +370,4 @@ async def run_miner(tg_client: Client, proxy: str | None):
         await Miner(tg_client=tg_client).run(proxy=proxy)
     except InvalidSession:
         logger.error(f"{tg_client.name} | Invalid Session")
+
